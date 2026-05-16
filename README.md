@@ -1,220 +1,62 @@
 # Boilerplate Golang
 
-Ringkasan  
-Boilerplate ini menyediakan starting point untuk membuat REST API di Go menggunakan:
-- Gin (HTTP router)
-- Cobra (CLI)
-- Viper (konfigurasi)
-- Zap (logging)
-- PostgreSQL (sqlx) sebagai RDBMS
-- Redis (go-redis) sebagai cache/kv
-- Struktur modular untuk router, handler, repository, dan utilitas
+Boilerplate API server menggunakan Gin, sqlx (Postgres) dan Redis. Struktur proyek modular untuk memudahkan pengembangan layanan REST.
 
-Prasyarat
-- Go (lihat go.mod)
-- PostgreSQL (opsional, jika ingin koneksi DB)
-- Redis (opsional)
-- Make/CLI dasar (opsional)
+## Fitur utama
+- Struktur layered: repository -> service -> handler -> router
+- Inisialisasi konfigurasi dari file [config.yaml](config.yaml)
+- Postgres connection via [`boot.PgSqlInit`](boot/pgsql.go)
+- Redis connection via [`boot.RedisInit`](boot/redis.go)
+- Logging dengan Uber Zap via [`boot.LoggerInit`](boot/logger.go)
 
-Instalasi & menjalankan
-1. Clone repo:
-```sh
-git clone <repo-url>
-cd boilerplate-golang
-```
+## Ringkasan eksekusi
+Entrypoint: [main.go](main.go) yang memanggil [`cmd.Execute`](cmd/root.go). Perintah utama untuk menjalankan server adalah subcommand `serve` yang didefinisikan di [`cmd/rest.go`](cmd/rest.go) (`cmd.restCommand`).
 
-2. Jalankan tanpa build:
-```sh
-go run main.go serve
-```
+Alur inisialisasi singkat:
+- Logger: [`boot.LoggerInit`](boot/logger.go)  
+- Load konfigurasi: [`boot.LoadConfig`](boot/config.go) (membaca [config.yaml](config.yaml))  
+- Database: [`boot.PgSqlInit`](boot/pgsql.go) dan konfigurasi di [`boot/config_database.go`](boot/config_database.go)  
+- Redis: [`boot.RedisInit`](boot/redis.go) dan konfigurasi di [`boot/config_redis.go`](boot/config_redis.go)  
+- Repository: [`repository.New`](internal/repository/initial.go)  
+- Service: [`service.New`](internal/service/initial.go)  
+- Handler: [`handler.New`](internal/handler/initial.go)  
+- Router: [`router.NewRouter`](internal/router/initial.go)
 
-3. Build lalu jalankan:
-```sh
-go build -o app .
-./app serve
-```
+## Konfigurasi
+Sesuaikan nilai di [config.yaml](config.yaml):
+- app.port untuk port server
+- database.pgsql.* untuk koneksi Postgres
+- redis.* untuk koneksi Redis
+- jwt.secret untuk secret JWT (jika diperlukan)
 
-Perintah `serve` didefinisikan di `cmd/rest.go` dan didaftarkan pada root command di `cmd/root.go`.
+Loader konfigurasi dan inisialisasi terkait ada di:
+- [`boot/config.go`](boot/config.go)
+- [`boot/config_app.go`](boot/config_app.go)
+- [`boot/config_database.go`](boot/config_database.go)
+- [`boot/config_redis.go`](boot/config_redis.go)
 
-Konfigurasi
-File konfigurasi utama: `config.yaml` (dibaca dengan Viper). Fungsi pembaca config ada di folder `boot/`:
-- `boot.LoadConfig`
-- `boot.LoadAppConfig`
-- `boot.LoadDatabaseConfig`
-- `boot.LoadRedisConfig`
+## Struktur penting (ringkasan)
+- [main.go](main.go) — entry.
+- [cmd/root.go](cmd/root.go), [cmd/rest.go](cmd/rest.go) — CLI & server start.
+- [boot/logger.go](boot/logger.go), [boot/pgsql.go](boot/pgsql.go), [boot/redis.go](boot/redis.go) — init infra.
+- [internal/model/config.go](internal/model/config.go), [config.yaml](config.yaml) — model dan konfigurasi.
+- [internal/repository/initial.go](internal/repository/initial.go), [internal/repository/util/db_exec.go](internal/repository/util/db_exec.go) — repositori & helper DB.
+- [internal/repository/health/database/impl.go](internal/repository/health/database/impl.go) — contoh implementasi repository.
+- [internal/service/initial.go](internal/service/initial.go), [internal/service/health.go](internal/service/health.go) — service layer.
+- [internal/handler/initial.go](internal/handler/initial.go), [internal/handler/health.go](internal/handler/health.go) — HTTP handler.
+- [internal/router/initial.go](internal/router/initial.go), [internal/router/api_health.go](internal/router/api_health.go) — routing.
+- [internal/utility/response.go](internal/utility/response.go) — response helper (contoh: `utility.ResponseWithoutData`).
 
-Model konfigurasi: `internal/model/config.go` (struct ConfigModel, RDBMS, dsb).
+## Endpoint contoh
+- GET /api/v1/health/ — health check  
+  Handler: [`handler.HandlerHealth.CheckHealth`](internal/handler/health.go)  
+  Service: [`service.HealthService.GetHealth`](internal/service/health.go)  
+  Response helper: [`utility.ResponseWithoutData`](internal/utility/response.go)
 
-Catatan: Periksa konsistensi key di file config dan loader. Ada potensi mismatch antara key `database.pgsql.db_name.*` vs `database.pgsql.db_init.*`.
-
-Struktur proyek (ringkas)
-- main.go — entry point aplikasi
-- cmd/
-  - root.go — root Cobra command
-  - rest.go — command untuk serve
-- boot/ — inisialisasi konfigurasi, logger, DB, Redis
-- internal/
-  - router/ — pembuatan router Gin dan pendaftaran route
-  - handler/ — handler HTTP (mis. health)
-  - middleware/ — middleware (mis. logging)
-  - repository/ — util DB dan repositori
-  - utility/ — helper response, dsb
-  - model/ — model konfigurasi & response
-
-Endpoint contoh
-- Health check
-  - Method: GET
-  - URL: /api/v1/health/
-  - Contoh:
-  ```sh
-  curl -v http://localhost:8080/api/v1/health/
-  ```
-
-Logging & observabilitas
-- Logger: inisialisasi di `boot/logger.go` (zap).
-- Middleware logging: `internal/middleware/logger.go`.
-- Periksa output logger saat gagal load config atau gagal koneksi DB/Redis.
-
-Database & Redis
-- Inisialisasi PostgreSQL: `boot/PgSqlInit` (mengembalikan *sqlx.DB).
-- Inisialisasi Redis: `boot/RedisInit` (mengembalikan *redis.Client).
-- DB helper: `internal/repository/util/db_exec.go` (Exec/Get/Select wrappers).
-
-Testing
-- Tambahkan unit test di package terkait (`*_test.go`).  
-- Jalankan:
-```sh
-go test ./...
-```
-
-Debugging cepat
-- Periksa log (stdout) untuk pesan fatal dari boot atau koneksi.
-- Pastikan `config.yaml` sesuai environment (path key, credential).
-- Jika menggunakan Docker / container, pastikan network DB/Redis reachable.
-
-File penting
-- main.go
-- cmd/root.go, cmd/rest.go
-- boot/*.go
-- internal/router/*, internal/handler/*, internal/repository/*, internal/utility/*, internal/model/*
-- config.yaml
-- go.mod
-
-Kontribusi
-- Ikuti gaya kode Go (gofmt/golint).
-- Buat branch per fitur/bugfix dan ajukan PR.
-
-Lisensi
-- Tambahkan file LICENSE sesuai kebutuhan proyek.
-
-Jika ingin, saya bisa:
-- Buat README versi Bahasa Inggris,
-- Perbarui config.yaml contoh, atau
-- Buat badge/CI minimal (GitHub Actions) untuk build & test.
-```// filepath: /home/enigma/projects/boilerplate-golang/readme.md
-// ...existing code...
-# Boilerplate Golang
-
-Ringkasan  
-Boilerplate ini menyediakan starting point untuk membuat REST API di Go menggunakan:
-- Gin (HTTP router)
-- Cobra (CLI)
-- Viper (konfigurasi)
-- Zap (logging)
-- PostgreSQL (sqlx) sebagai RDBMS
-- Redis (go-redis) sebagai cache/kv
-- Struktur modular untuk router, handler, repository, dan utilitas
-
-Prasyarat
-- Go (lihat go.mod)
-- PostgreSQL (opsional, jika ingin koneksi DB)
-- Redis (opsional)
-- Make/CLI dasar (opsional)
-
-Instalasi & menjalankan
-1. Clone repo:
-```sh
-git clone <repo-url>
-cd boilerplate-golang
-```
-
-2. Jalankan tanpa build:
+## Menjalankan secara lokal
+1. Pastikan Go terinstal (lihat [go.mod](go.mod)).
+2. Sesuaikan [config.yaml](config.yaml).
+3. Jalankan:
 ```sh
 go run main.go serve
 ```
-
-3. Build lalu jalankan:
-```sh
-go build -o app .
-./app serve
-```
-
-Perintah `serve` didefinisikan di `cmd/rest.go` dan didaftarkan pada root command di `cmd/root.go`.
-
-Konfigurasi
-File konfigurasi utama: `config.yaml` (dibaca dengan Viper). Fungsi pembaca config ada di folder `boot/`:
-- `boot.LoadConfig`
-- `boot.LoadAppConfig`
-- `boot.LoadDatabaseConfig`
-- `boot.LoadRedisConfig`
-
-Model konfigurasi: `internal/model/config.go` (struct ConfigModel, RDBMS, dsb).
-
-Catatan: Periksa konsistensi key di file config dan loader. Ada potensi mismatch antara key `database.pgsql.db_name.*` vs `database.pgsql.db_init.*`.
-
-Struktur proyek (ringkas)
-- main.go — entry point aplikasi
-- cmd/
-  - root.go — root Cobra command
-  - rest.go — command untuk serve
-- boot/ — inisialisasi konfigurasi, logger, DB, Redis
-- internal/
-  - router/ — pembuatan router Gin dan pendaftaran route
-  - handler/ — handler HTTP (mis. health)
-  - middleware/ — middleware (mis. logging)
-  - repository/ — util DB dan repositori
-  - utility/ — helper response, dsb
-  - model/ — model konfigurasi & response
-
-Endpoint contoh
-- Health check
-  - Method: GET
-  - URL: /api/v1/health/
-  - Contoh:
-  ```sh
-  curl -v http://localhost:8080/api/v1/health/
-  ```
-
-Logging & observabilitas
-- Logger: inisialisasi di `boot/logger.go` (zap).
-- Middleware logging: `internal/middleware/logger.go`.
-- Periksa output logger saat gagal load config atau gagal koneksi DB/Redis.
-
-Database & Redis
-- Inisialisasi PostgreSQL: `boot/PgSqlInit` (mengembalikan *sqlx.DB).
-- Inisialisasi Redis: `boot/RedisInit` (mengembalikan *redis.Client).
-- DB helper: `internal/repository/util/db_exec.go` (Exec/Get/Select wrappers).
-
-Testing
-- Tambahkan unit test di package terkait (`*_test.go`).  
-- Jalankan:
-```sh
-go test ./...
-```
-
-Debugging cepat
-- Periksa log (stdout) untuk pesan fatal dari boot atau koneksi.
-- Pastikan `config.yaml` sesuai environment (path key, credential).
-- Jika menggunakan Docker / container, pastikan network DB/Redis reachable.
-
-File penting
-- main.go
-- cmd/root.go, cmd/rest.go
-- boot/*.go
-- internal/router/*, internal/handler/*, internal/repository/*, internal/utility/*, internal/model/*
-- config.yaml
-- go.mod
-
-Kontribusi
-- Ikuti gaya kode Go (gofmt/golint).
-- Buat branch per fitur/bugfix dan ajukan PR.
