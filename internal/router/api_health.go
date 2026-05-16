@@ -5,9 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func registerHealthRoutes(rg *gin.RouterGroup) {
+func registerHealthRoutes(rg *gin.RouterGroup, handler *handler.HandlerHealth) {
 	r := rg.Group("/health")
-	handler := handler.NewHandlerHealth()
 
 	r.GET("/", handler.CheckHealth)
 }

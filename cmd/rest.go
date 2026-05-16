@@ -5,7 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bayik4/boilerplate-golang/boot"
+	"github.com/bayik4/boilerplate-golang/internal/handler"
+	"github.com/bayik4/boilerplate-golang/internal/repository"
+	"github.com/bayik4/boilerplate-golang/internal/repository/util"
 	"github.com/bayik4/boilerplate-golang/internal/router"
+	"github.com/bayik4/boilerplate-golang/internal/service"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -24,7 +28,11 @@ var restCommand = &cobra.Command{
 
 		cfg := boot.LoadConfig(ctx, vpr, log)
 
-		r := router.NewRouter(log)
+		dbexec := util.NewDBExecutor(log)
+		repo := repository.New(cfg.Database.Pgsql.DBInit, *dbexec)
+		serv := service.New(repo)
+		handler := handler.New(serv)
+		r := router.NewRouter(handler, log)
 
 		addr := fmt.Sprintf(":%s", cfg.App.Port)
 

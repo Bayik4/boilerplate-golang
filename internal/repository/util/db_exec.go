@@ -8,22 +8,26 @@ import (
 )
 
 type DBExecutor struct {
-	DB  *sqlx.DB
 	Log *zap.Logger
 }
 
-func NewDBExecutor(db *sqlx.DB, log *zap.Logger) *DBExecutor {
+func NewDBExecutor(log *zap.Logger) *DBExecutor {
 	return &DBExecutor{
-		DB:  db,
 		Log: log,
 	}
 }
 
-func (d *DBExecutor) Exec(ctx context.Context, query string, args ...any) error {
+func (d *DBExecutor) Exec(
+	ctx context.Context,
+	db sqlx.ExtContext,
+	query string,
+	args ...any,
+) error {
 
-	_, err := d.DB.ExecContext(ctx, query, args...)
+	_, err := db.ExecContext(ctx, query, args...)
 	if err != nil {
-		d.Log.Error("failed execute query",
+		d.Log.Error(
+			"failed execute query",
 			zap.String("query", query),
 			zap.Error(err),
 		)
@@ -33,11 +37,25 @@ func (d *DBExecutor) Exec(ctx context.Context, query string, args ...any) error 
 	return nil
 }
 
-func (d *DBExecutor) Get(ctx context.Context, dest any, query string, args ...any) error {
+func (d *DBExecutor) Get(
+	ctx context.Context,
+	db sqlx.QueryerContext,
+	dest any,
+	query string,
+	args ...any,
+) error {
 
-	err := d.DB.GetContext(ctx, dest, query, args...)
+	err := sqlx.GetContext(
+		ctx,
+		db,
+		dest,
+		query,
+		args...,
+	)
+
 	if err != nil {
-		d.Log.Error("failed query get",
+		d.Log.Error(
+			"failed query get",
 			zap.String("query", query),
 			zap.Error(err),
 		)
@@ -47,11 +65,25 @@ func (d *DBExecutor) Get(ctx context.Context, dest any, query string, args ...an
 	return nil
 }
 
-func (d *DBExecutor) Select(ctx context.Context, dest any, query string, args ...any) error {
+func (d *DBExecutor) Select(
+	ctx context.Context,
+	db sqlx.QueryerContext,
+	dest any,
+	query string,
+	args ...any,
+) error {
 
-	err := d.DB.SelectContext(ctx, dest, query, args...)
+	err := sqlx.SelectContext(
+		ctx,
+		db,
+		dest,
+		query,
+		args...,
+	)
+
 	if err != nil {
-		d.Log.Error("failed query select",
+		d.Log.Error(
+			"failed query select",
 			zap.String("query", query),
 			zap.Error(err),
 		)

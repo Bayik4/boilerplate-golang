@@ -3,13 +3,14 @@ package router
 import (
 	"time"
 
+	"github.com/bayik4/boilerplate-golang/internal/handler"
 	"github.com/bayik4/boilerplate-golang/internal/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-func NewRouter(log *zap.Logger) *gin.Engine {
+func NewRouter(handler *handler.Handler, log *zap.Logger) *gin.Engine {
 	r := gin.New()
 
 	r.Use(
@@ -25,7 +26,7 @@ func NewRouter(log *zap.Logger) *gin.Engine {
 		gin.Recovery(),
 	)
 
-	registerRoutes(r)
+	registerRoutes(r, handler)
 
 	return r
 }

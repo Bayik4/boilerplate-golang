@@ -20,8 +20,7 @@ func LoadDatabaseConfig(vpr *viper.Viper, log *zap.Logger) model.DatabaseConfig 
 		log.Fatal("failed connect database", zap.Error(err))
 	}
 
-	init.ConnRead = db
-	init.ConnWrite = db
+	init.Conn = db
 
 	return model.DatabaseConfig{
 		Pgsql: model.RDBMSItems{

@@ -32,8 +32,7 @@ type RDBMS struct {
 	Username  string
 	Password  string
 	Dbname    string
-	ConnRead  *sqlx.DB
-	ConnWrite *sqlx.DB
+	Conn *sqlx.DB
 }
 
 type RedisConfig struct {
