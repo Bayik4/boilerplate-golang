@@ -1,62 +1,167 @@
 # Boilerplate Golang
 
-Boilerplate API server menggunakan Gin, sqlx (Postgres) dan Redis. Struktur proyek modular untuk memudahkan pengembangan layanan REST.
+A modular Go REST API starter built with Gin, Cobra, Viper, sqlx, PostgreSQL, Redis, Zap, and OpenTelemetry.
 
-## Fitur utama
-- Struktur layered: repository -> service -> handler -> router
-- Inisialisasi konfigurasi dari file [config.yaml](config.yaml)
-- Postgres connection via [`boot.PgSqlInit`](boot/pgsql.go)
-- Redis connection via [`boot.RedisInit`](boot/redis.go)
-- Logging dengan Uber Zap via [`boot.LoggerInit`](boot/logger.go)
+This project is designed as a clean foundation for backend services with a layered architecture and configuration-driven startup.
 
-## Ringkasan eksekusi
-Entrypoint: [main.go](main.go) yang memanggil [`cmd.Execute`](cmd/root.go). Perintah utama untuk menjalankan server adalah subcommand `serve` yang didefinisikan di [`cmd/rest.go`](cmd/rest.go) (`cmd.restCommand`).
+## Features
 
-Alur inisialisasi singkat:
-- Logger: [`boot.LoggerInit`](boot/logger.go)  
-- Load konfigurasi: [`boot.LoadConfig`](boot/config.go) (membaca [config.yaml](config.yaml))  
-- Database: [`boot.PgSqlInit`](boot/pgsql.go) dan konfigurasi di [`boot/config_database.go`](boot/config_database.go)  
-- Redis: [`boot.RedisInit`](boot/redis.go) dan konfigurasi di [`boot/config_redis.go`](boot/config_redis.go)  
-- Repository: [`repository.New`](internal/repository/initial.go)  
-- Service: [`service.New`](internal/service/initial.go)  
-- Handler: [`handler.New`](internal/handler/initial.go)  
-- Router: [`router.NewRouter`](internal/router/initial.go)
+- Layered architecture: repository -> service -> handler -> router
+- CLI entrypoint with Cobra
+- Viper-based configuration loading from `config.yaml`
+- PostgreSQL integration using `sqlx`
+- Redis integration using `go-redis`
+- Structured logging with `zap`
+- Optional OpenTelemetry tracing support
+- Example health-check endpoint
 
-## Konfigurasi
-Sesuaikan nilai di [config.yaml](config.yaml):
-- app.port untuk port server
-- database.pgsql.* untuk koneksi Postgres
-- redis.* untuk koneksi Redis
-- jwt.secret untuk secret JWT (jika diperlukan)
+## Tech stack
 
-Loader konfigurasi dan inisialisasi terkait ada di:
-- [`boot/config.go`](boot/config.go)
-- [`boot/config_app.go`](boot/config_app.go)
-- [`boot/config_database.go`](boot/config_database.go)
-- [`boot/config_redis.go`](boot/config_redis.go)
+- Go
+- Gin HTTP framework
+- Cobra CLI
+- Viper configuration
+- sqlx + PostgreSQL
+- Redis
+- OpenTelemetry
+- Zap logger
 
-## Struktur penting (ringkasan)
-- [main.go](main.go) — entry.
-- [cmd/root.go](cmd/root.go), [cmd/rest.go](cmd/rest.go) — CLI & server start.
-- [boot/logger.go](boot/logger.go), [boot/pgsql.go](boot/pgsql.go), [boot/redis.go](boot/redis.go) — init infra.
-- [internal/model/config.go](internal/model/config.go), [config.yaml](config.yaml) — model dan konfigurasi.
-- [internal/repository/initial.go](internal/repository/initial.go), [internal/repository/util/db_exec.go](internal/repository/util/db_exec.go) — repositori & helper DB.
-- [internal/repository/health/database/impl.go](internal/repository/health/database/impl.go) — contoh implementasi repository.
-- [internal/service/initial.go](internal/service/initial.go), [internal/service/health.go](internal/service/health.go) — service layer.
-- [internal/handler/initial.go](internal/handler/initial.go), [internal/handler/health.go](internal/handler/health.go) — HTTP handler.
-- [internal/router/initial.go](internal/router/initial.go), [internal/router/api_health.go](internal/router/api_health.go) — routing.
-- [internal/utility/response.go](internal/utility/response.go) — response helper (contoh: `utility.ResponseWithoutData`).
+## Project structure
 
-## Endpoint contoh
-- GET /api/v1/health/ — health check  
-  Handler: [`handler.HandlerHealth.CheckHealth`](internal/handler/health.go)  
-  Service: [`service.HealthService.GetHealth`](internal/service/health.go)  
-  Response helper: [`utility.ResponseWithoutData`](internal/utility/response.go)
+```text
+boilerplate-golang/
+├── boot/                      # application bootstrap and infrastructure setup
+│   ├── config.go
+│   ├── config_app.go
+│   ├── config_database.go
+│   ├── config_logger.go
+│   ├── config_redis.go
+│   ├── config_telemetry.go
+│   ├── logger.go
+│   ├── pgsql.go
+│   └── redis.go
+├── cmd/                       # CLI commands
+│   ├── rest.go
+│   └── root.go
+├── internal/
+│   ├── handler/
+│   ├── middleware/
+│   ├── model/
+│   ├── repository/
+│   ├── router/
+│   ├── service/
+│   ├── telemetry/
+│   └── utility/
+├── config.yaml                # runtime configuration
+├── go.mod
+├── main.go
+└── README.md
+```
 
-## Menjalankan secara lokal
-1. Pastikan Go terinstal (lihat [go.mod](go.mod)).
-2. Sesuaikan [config.yaml](config.yaml).
-3. Jalankan:
-```sh
+## Requirements
+
+- Go version declared in `go.mod`
+- PostgreSQL instance
+- Redis instance
+- Optional OTLP collector if OpenTelemetry is enabled
+
+## Configuration
+
+The application reads runtime settings from `config.yaml`.
+
+Example configuration:
+
+```yaml
+app:
+  name: boilerplate
+  host: localhost
+  port: 8080
+  env: development
+
+log:
+  service_name: boilerplate
+  level: debug
+  format: json
+
+otel:
+  enabled: true
+  exporter_otlp_endpoint: localhost:4317
+  exporter_otlp_insecure: true
+  service_name: boilerplate
+  sampling_ratio: 1.0
+
+database:
+  pgsql:
+    db_name:
+      host: localhost
+      port: 5432
+      username: user_initial
+      password: 123
+      dbname: db_initial
+
+redis:
+  host: localhost
+  port: 6379
+  username: ""
+  password: ""
+  dbname: ""
+  dbindex: 0
+
+jwt:
+  secret: ""
+```
+
+The configuration loaders live in the `boot` package, including:
+
+- `boot/config.go`
+- `boot/config_app.go`
+- `boot/config_database.go`
+- `boot/config_redis.go`
+- `boot/config_logger.go`
+- `boot/config_telemetry.go`
+
+## Running the app
+
+1. Update the values in `config.yaml` for your local environment.
+2. Ensure PostgreSQL and Redis are available.
+3. Start the server:
+
+```bash
 go run main.go serve
 ```
+
+This invokes the `serve` command defined in `cmd/rest.go`.
+
+## Application startup flow
+
+The startup sequence is roughly:
+
+1. Initialize logger
+2. Load application configuration
+3. Initialize OpenTelemetry if enabled
+4. Initialize PostgreSQL connection
+5. Initialize Redis connection
+6. Build repository, service, and handler layers
+7. Register router and start HTTP server
+
+## API
+
+The app includes a health check endpoint.
+
+- GET `/api/v1/health/`
+
+Example:
+
+```bash
+curl http://localhost:8080/api/v1/health/
+```
+
+## Notes
+
+- Entry point: `main.go`
+- CLI root command: `cmd/root.go`
+- Server command: `cmd/rest.go`
+- Router registration: `internal/router`
+- Health implementation: `internal/handler/health.go`, `internal/service/health.go`
+
+This repository is meant to be a starting point for building a production-ready Go API with common infrastructure already in place.
