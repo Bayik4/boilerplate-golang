@@ -2,15 +2,28 @@ app:
   name: boilerplate
   host: localhost
   port: 8080
+  env: development
+
+log:
+  service_name: boilerplate
+  level: debug
+  format: json
+
+otel:
+  enabled: true
+  exporter_otlp_endpoint: localhost:4317
+  exporter_otlp_insecure: true
+  service_name: boilerplate
+  sampling_ratio: 1.0
 
 database:
   pgsql:
-    db_init:
+    db_name:
       host: localhost 
       port: 5432
-      username: root
-      password: 
-      dbname: 
+      username: user_initial 
+      password: 123
+      dbname: db_initial
 
 redis:
   host: localhost 

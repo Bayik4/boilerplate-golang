@@ -10,12 +10,15 @@ type ConfigModel struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
+	Logger   ConfigLogger
+	Otel     ConfigTelemetry
 }
 
 type AppConfig struct {
 	Name string
 	Host string
 	Port string
+	Env  string
 }
 
 type DatabaseConfig struct {
@@ -27,12 +30,12 @@ type RDBMSItems struct {
 }
 
 type RDBMS struct {
-	Host      string
-	Port      string
-	Username  string
-	Password  string
-	Dbname    string
-	Conn *sqlx.DB
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Dbname   string
+	Conn     *sqlx.DB
 }
 
 type RedisConfig struct {

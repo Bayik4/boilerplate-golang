@@ -20,14 +20,16 @@ func LoadConfig(ctx context.Context, vpr *viper.Viper, log *zap.Logger) *model.C
 			zap.Error(err),
 		)
 	}
-	
+
 	app := LoadAppConfig(vpr)
 	db := LoadDatabaseConfig(vpr, log)
 	redis := LoadRedisConfig(ctx, vpr, log)
-	
+	otel := LoadTelemetryConfig(vpr)
+
 	return &model.ConfigModel{
-		App: app,
+		App:      app,
 		Database: db,
-		Redis: redis,
+		Redis:    redis,
+		Otel:     otel,
 	}
 }

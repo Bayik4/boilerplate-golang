@@ -1,13 +1,16 @@
 package handler
 
-import "github.com/bayik4/boilerplate-golang/internal/service"
+import (
+	"github.com/bayik4/boilerplate-golang/internal/service"
+	"go.uber.org/zap"
+)
 
 type Handler struct {
 	HandlerHealth *HandlerHealth
 }
 
-func New(service *service.Service) *Handler {
+func New(service *service.Service, logger *zap.Logger) *Handler {
 	return &Handler{
-		HandlerHealth: newHandlerHealth(service),
+		HandlerHealth: newHandlerHealth(service, logger),
 	}
 }

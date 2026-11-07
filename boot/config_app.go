@@ -10,5 +10,6 @@ func LoadAppConfig(vpr *viper.Viper) model.AppConfig {
 		Name: vpr.GetString("app.name"),
 		Host: vpr.GetString("app.host"),
 		Port: vpr.GetString("app.port"),
+		Env:  vpr.GetString("app.env"),
 	}
 }

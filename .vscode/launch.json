@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "name": "Launch rest service",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "main.go",
+            "args": ["serve"]
+        }
+    ]
+}
