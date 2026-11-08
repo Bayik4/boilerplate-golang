@@ -1,20 +1,22 @@
-MIGRATE=migrate
-MIGRATIONS_PATH=./migrations
-DATABASE_URL?=postgres://user_initial:123@localhost:5432/db_initial?sslmode=disable
-
-.PHONY: migrate-create migrate-up migrate-down migrate-version migrate-force
-
-migrate-create:
-	@$(MIGRATE) create -ext sql -dir $(MIGRATIONS_PATH) -seq $(name)
+.PHONY: migrate-up migrate-down migrate-version migrate-force migrate-create
 
 migrate-up:
-	@$(MIGRATE) -path $(MIGRATIONS_PATH) -database "$(DATABASE_URL)" up
+	go run . migrate up
 
 migrate-down:
-	@$(MIGRATE) -path $(MIGRATIONS_PATH) -database "$(DATABASE_URL)" down 1
+	go run . migrate down
 
 migrate-version:
-	@$(MIGRATE) -path $(MIGRATIONS_PATH) -database "$(DATABASE_URL)" version
+	go run . migrate version
 
 migrate-force:
-	@$(MIGRATE) -path $(MIGRATIONS_PATH) -database "$(DATABASE_URL)" force $(version)
+ifndef version
+	$(error version is required. Example: make migrate-force version=1)
+endif
+	go run . migrate force $(version)
+
+migrate-create:
+ifndef name
+	$(error name is required. Example: make migrate-create name=create_users_table)
+endif
+	go run . migrate create $(name)

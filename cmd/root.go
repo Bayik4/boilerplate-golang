@@ -22,5 +22,6 @@ func Execute() error {
 func init() {
 	rootCommand.AddCommand(
 		restCommand,
+		migrateCommand,
 	)
 }
