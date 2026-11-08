@@ -42,6 +42,7 @@ boilerplate-golang/
 │   ├── pgsql.go
 │   └── redis.go
 ├── cmd/                       # CLI commands
+│   ├── migrate*.go            # database migration commands
 │   ├── rest.go
 │   └── root.go
 ├── migrations/                # versioned SQL migration pairs
@@ -66,7 +67,6 @@ boilerplate-golang/
 - Go version declared in `go.mod`
 - PostgreSQL instance
 - Redis instance
-- `migrate` CLI from [golang-migrate](https://github.com/golang-migrate/migrate) for database migrations
 - Optional OTLP collector if OpenTelemetry is enabled
 
 ## Configuration
@@ -131,7 +131,7 @@ The configuration loaders live in the `boot` package, including:
 3. Start the server:
 
 ```bash
-go run main.go serve
+go run . serve
 ```
 
 This invokes the `serve` command defined in `cmd/rest.go`.
@@ -142,48 +142,33 @@ Database schema changes are managed with `golang-migrate`. Each migration is a
 pair of numbered `.up.sql` and `.down.sql` files in `migrations/`. The
 repository includes an initial migration that creates `initial_table`.
 
-Install the `migrate` CLI before running the migration targets:
+Migration commands are built into the application; there is no need to install
+the `migrate` CLI separately. They read the PostgreSQL and Redis settings from
+`config.yaml`, so configure those services before running the commands. For
+example, edit the `database.pgsql.db_name` and `redis` sections to match your
+local environment.
+
+The Makefile targets wrap the corresponding Cobra commands:
 
 ```bash
-go install github.com/golang-migrate/migrate/v4/cmd/migrate@v4.20.1
-```
-
-The Makefile defaults to the local PostgreSQL database. Override
-`DATABASE_URL` to target another database:
-
-```bash
-export DATABASE_URL='postgres://DB_USER:DB_PASSWORD@DB_HOST:5432/DB_NAME?sslmode=disable'
-```
-
-Create a new sequential migration pair:
-
-```bash
+# Create a new sequential migration pair
 make migrate-create name=add_example_table
-```
 
-Apply all pending migrations:
-
-```bash
+# Apply all pending migrations
 make migrate-up
-```
 
-Roll back the most recent migration (one version):
-
-```bash
+# Roll back the most recent migration (one version)
 make migrate-down
-```
 
-Check the current migration version:
-
-```bash
+# Check the current migration version
 make migrate-version
-```
 
-Force-set the recorded migration version:
-
-```bash
+# Force-set the recorded migration version
 make migrate-force version=1
 ```
+
+The same commands can be run directly, for example `go run . migrate up` or
+`go run . migrate create add_example_table`.
 
 `migrate-force` changes the migration version without applying or reverting
 SQL, so use it only to recover a migration state intentionally. Migrations are
