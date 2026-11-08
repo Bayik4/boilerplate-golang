@@ -17,6 +17,8 @@ require (
 	go.uber.org/zap v1.28.0
 )
 
+require github.com/golang-migrate/migrate/v4 v4.20.1 // indirect
+
 require (
 	github.com/bytedance/gopkg v0.1.4 // indirect
 	github.com/bytedance/sonic v1.15.4 // indirect

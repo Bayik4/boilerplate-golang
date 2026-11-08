@@ -10,6 +10,7 @@ This project is designed as a clean foundation for backend services with a layer
 - CLI entrypoint with Cobra
 - Viper-based configuration loading from `config.yaml`
 - PostgreSQL integration using `sqlx`
+- Database migrations using `golang-migrate`
 - Redis integration using `go-redis`
 - Structured logging with `zap`
 - Optional OpenTelemetry tracing support
@@ -43,6 +44,8 @@ boilerplate-golang/
 ├── cmd/                       # CLI commands
 │   ├── rest.go
 │   └── root.go
+├── migrations/                # versioned SQL migration pairs
+├── Makefile                   # database migration commands
 ├── internal/
 │   ├── handler/
 │   ├── middleware/
@@ -63,6 +66,7 @@ boilerplate-golang/
 - Go version declared in `go.mod`
 - PostgreSQL instance
 - Redis instance
+- `migrate` CLI from [golang-migrate](https://github.com/golang-migrate/migrate) for database migrations
 - Optional OTLP collector if OpenTelemetry is enabled
 
 ## Configuration
@@ -131,6 +135,60 @@ go run main.go serve
 ```
 
 This invokes the `serve` command defined in `cmd/rest.go`.
+
+## Database migrations
+
+Database schema changes are managed with `golang-migrate`. Each migration is a
+pair of numbered `.up.sql` and `.down.sql` files in `migrations/`. The
+repository includes an initial migration that creates `initial_table`.
+
+Install the `migrate` CLI before running the migration targets:
+
+```bash
+go install github.com/golang-migrate/migrate/v4/cmd/migrate@v4.20.1
+```
+
+The Makefile defaults to the local PostgreSQL database. Override
+`DATABASE_URL` to target another database:
+
+```bash
+export DATABASE_URL='postgres://DB_USER:DB_PASSWORD@DB_HOST:5432/DB_NAME?sslmode=disable'
+```
+
+Create a new sequential migration pair:
+
+```bash
+make migrate-create name=add_example_table
+```
+
+Apply all pending migrations:
+
+```bash
+make migrate-up
+```
+
+Roll back the most recent migration (one version):
+
+```bash
+make migrate-down
+```
+
+Check the current migration version:
+
+```bash
+make migrate-version
+```
+
+Force-set the recorded migration version:
+
+```bash
+make migrate-force version=1
+```
+
+`migrate-force` changes the migration version without applying or reverting
+SQL, so use it only to recover a migration state intentionally. Migrations are
+run explicitly with these Make targets; starting the REST server does not
+automatically apply them.
 
 ## Application startup flow
 
